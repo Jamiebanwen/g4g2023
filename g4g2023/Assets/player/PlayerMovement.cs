@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,7 +13,9 @@ public class PlayerMovement : MonoBehaviour
     bool isAlive = true;
 
     //movement speed 
-    [SerializeField] float moveSpeed = 5f;
+    [SerializeField] float walkSpeed = 5f;
+    [SerializeField] float baseSpeed = 5f;
+    [SerializeField] float runModifier = 2f;
     [SerializeField] float jumpForce = 10f;
     [SerializeField] float dashSpeed = 15f;
     [SerializeField] float dashDuration = 0.5f;
@@ -24,9 +27,13 @@ public class PlayerMovement : MonoBehaviour
     public bool isDashing;
     public bool canDash = false;
     public bool canDoubleJump = false;
+    public bool isRunning;
+    //Animation
+    Animator myAnimator;
     
     void Start(){
         rb2d = GetComponent<Rigidbody2D>();
+        myAnimator = GetComponent<Animator>();
         AbilityCheck();
     }
 
@@ -55,7 +62,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (!isAlive) { return; }
 
-        Run();
+        Walk();
         moveInput.x = Input.GetAxis("Horizontal");
 
         FlipSprite();
@@ -108,15 +115,27 @@ public class PlayerMovement : MonoBehaviour
             jumpsAvailableCount = 1;
         }
     }
-    void Run()
+    void Walk()
     {
-        Vector2 playerVelocity = new Vector2 (moveInput.x*moveSpeed,rb2d.velocity.y);
+        walkSpeed = baseSpeed;
+        Vector2 playerVelocity = new Vector2 (moveInput.x*walkSpeed,rb2d.velocity.y);
         rb2d.velocity=playerVelocity;
-
+        myAnimator.SetBool("IsRunning",false);
         bool PlayerHasHorizontalSpeed = Mathf.Abs(rb2d.velocity.x) >Mathf.Epsilon;
-        //rb2d.SetBool("IsRunning",PlayerHasHorizontalSpeed);
+        myAnimator.SetBool("IsWalking",PlayerHasHorizontalSpeed);
         
     }
+
+
+    void OnRun(InputValue value)
+    {
+        baseSpeed = walkSpeed;
+        isRunning=true;
+        walkSpeed = runModifier;
+        myAnimator.SetBool("IsWalking",false);
+        myAnimator.SetBool("IsRunning",true);
+    }
+
 
     void OnDash(InputValue value)
     {
@@ -128,13 +147,13 @@ public class PlayerMovement : MonoBehaviour
     }
     IEnumerator Dash()
     {
-        float baseSpeed = moveSpeed;
+        float baseSpeed = walkSpeed;
         isDashing=true;
         //myAnimator.SetBool("IsDashing",isDashing);
         //audiosource.PlayOneShot(DASHSFX)
-        moveSpeed *= dashSpeed;
+        walkSpeed *= dashSpeed;
         yield return new WaitForSeconds(dashDuration);
-        moveSpeed = baseSpeed;
+        walkSpeed = baseSpeed;
         isDashing = false;
         //myAnimator.SetBool("IsDashing",isDashing);
     }
